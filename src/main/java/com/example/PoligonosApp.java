@@ -182,14 +182,11 @@ public class PoligonosApp extends Application {
     protected List<Double> perimetros() {
         return pontosPoligonos.stream()
                 .flatMap(lista -> {
-                    // Semente para fechar o polígono: começamos do último ponto
                     Point pontoFinal = lista.get(lista.size() - 1);
 
-                    // Redução (Folding): aplica o acumulador recursivamente entre os pontos
                     Point resultado = lista.stream()
                             .reduce(pontoFinal, (acc, atual) -> new Point(acc, atual));
 
-                    // Retornamos um Stream com o valor para atender à exigência do flatMap
                     return java.util.stream.Stream.of(resultado.distance());
                 })
                 .toList();
