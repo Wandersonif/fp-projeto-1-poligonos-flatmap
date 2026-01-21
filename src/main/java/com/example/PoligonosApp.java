@@ -80,26 +80,31 @@ public class PoligonosApp extends Application {
     @Override
     public void start(final Stage mainStage) {
         final var root = new Pane();
-        final var scene = new Scene(root, 800, 600);
 
-        for (final var listaPontos : pontosPoligonos) {
-            final var poligono = new Polygon();
-            for (final Point point : listaPontos) {
-                poligono.getPoints().addAll(point.x(), point.y());
-            }
+        List<Polygon> poligonos = pontosPoligonos.stream()
+                .map(listaPontos -> {
+                    final var poligono = new Polygon();
+                    // Adição das coordenadas de forma funcional
+                    listaPontos.forEach(p -> poligono.getPoints().addAll(p.x(), p.y()));
+                    poligono.setFill(Color.BLUE);
+                    poligono.setStroke(Color.BLACK);
+                    return poligono;
+                })
+                .toList();
 
-            poligono.setFill(Color.BLUE);
-            poligono.setStroke(Color.BLACK);
-            root.getChildren().add(poligono);
-        }
+        root.getChildren().addAll(poligonos);
 
-        final List<String> perimetros = perimetros().stream().map(p -> String.format("%.1f", p)).toList();
-        final var label1 = newLabel("Perímetro dos Polígonos: " + perimetros, 500);
-        final var label2 = newLabel("Tipo dos Polígonos: " + tipoPoligonos(), 530);
-        root.getChildren().addAll(label1, label2);
+        final List<String> perimetrosFormatados = perimetros().stream()
+                .map(p -> String.format("%.1f", p))
+                .toList();
+
+        root.getChildren().addAll(
+                newLabel("Perímetro dos Polígonos: " + perimetrosFormatados, 500),
+                newLabel("Tipo dos Polígonos: " + tipoPoligonos(), 530)
+        );
 
         mainStage.setTitle("Polígonos");
-        mainStage.setScene(scene);
+        mainStage.setScene(new Scene(root, 800, 600));
         mainStage.setAlwaysOnTop(true);
         mainStage.show();
     }
@@ -125,9 +130,17 @@ public class PoligonosApp extends Application {
     ///
     /// @return uma lista de String indicando se o polígono é um "quadrilátero" (quadrado ou retângulo),
     /// "triângulo", "pentágono", "hexágono" ou apenas um "polígono" geral quando tiver mais de 6 lados.
-    protected List<String> tipoPoligonos(){
-        // TODO Apague esta linha e a próxima e implemente seu código
-        return List.of();
+    protected List<String> tipoPoligonos() {
+        return pontosPoligonos.stream()
+                .flatMap(lista -> java.util.stream.Stream.of(lista.size()))
+                .map(qtd -> switch (qtd) {
+                    case 3 -> "Triângulo";
+                    case 4 -> "Quadrilátero";
+                    case 5 -> "Pentágono";
+                    case 6 -> "Hexágono";
+                    default -> "Polígono";
+                })
+                .toList();
     }
 
     /// Calcula o perímetro de cada polígono.
@@ -166,9 +179,20 @@ public class PoligonosApp extends Application {
     /// Desta forma, basta retornar este resultado como uma nova lista de [Double].
     ///
     /// @return uma lista contendo o perímetro de cada polígono
-    protected List<Double> perimetros(){
-        // TODO Apague esta linha e a próxima e implemente seu código
-        return List.of();
+    protected List<Double> perimetros() {
+        return pontosPoligonos.stream()
+                .flatMap(lista -> {
+                    // Semente para fechar o polígono: começamos do último ponto
+                    Point pontoFinal = lista.get(lista.size() - 1);
+
+                    // Redução (Folding): aplica o acumulador recursivamente entre os pontos
+                    Point resultado = lista.stream()
+                            .reduce(pontoFinal, (acc, atual) -> new Point(acc, atual));
+
+                    // Retornamos um Stream com o valor para atender à exigência do flatMap
+                    return java.util.stream.Stream.of(resultado.distance());
+                })
+                .toList();
+        }
     }
-}
 
